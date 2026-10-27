@@ -568,6 +568,48 @@ def auto_load_data():
             app.logger.error(f"Failed to auto-load CSV: {e}")
 
 
+# Version 2.0: automated deployment indicators (Topic 7, Exercise 3)
+from datetime import datetime
+
+APP_VERSION = "2.0"
+DEPLOYED_AT = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
+
+VERSION_BANNER = f'''
+<div style="background:#1f6feb;color:#ffffff;padding:14px 20px;font-family:Arial,sans-serif;">
+  <h1 style="margin:0 0 8px;font-size:24px;">Hello from Automated CI/CD Pipeline!</h1>
+  <p style="margin:3px 0;"><strong>Version:</strong> {APP_VERSION} (Automated Deployment)</p>
+  <p style="margin:3px 0;"><strong>Deployed via:</strong> GitHub Actions + AWS SSM</p>
+  <p style="margin:3px 0;"><strong>Container Started:</strong> {DEPLOYED_AT}</p>
+  <p style="margin:3px 0;"><strong>Assignment:</strong> Automated EC2 Deployment</p>
+</div>
+'''
+
+
+@app.after_request
+def add_version_banner(response):
+    if request.path == '/' and response.mimetype == 'text/html':
+        html = response.get_data(as_text=True)
+        body_tag = html.find('<body')
+        if body_tag != -1:
+            insert_at = html.find('>', body_tag) + 1
+            html = html[:insert_at] + VERSION_BANNER + html[insert_at:]
+        else:
+            html = VERSION_BANNER + html
+        response.set_data(html)
+    return response
+
+
+@app.route('/health')
+def health():
+    return jsonify(
+        status='healthy',
+        version=APP_VERSION,
+        deployment_method='automated',
+        deployed_at=DEPLOYED_AT,
+        timestamp=datetime.now().isoformat()
+    )
+
+
 if __name__ == '__main__':
     # Auto-load CSV and audio files on startup
     auto_load_data()
